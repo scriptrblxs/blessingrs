@@ -7,7 +7,7 @@ description = "A Rusty, blessings-insipired TUI library."
 license = "MIT"
 repository = "https://github.com/scriptrblxs/blessingrs"
 readme = "README.md"
-keywords = ["terminal","ansi","blessings","curses","ncurses","ui","tui"]
+keywords = ["terminal","ansi","blessings","ncurses","tui"]
 categories = ["command-line-interface"]
 
 [dependencies]
