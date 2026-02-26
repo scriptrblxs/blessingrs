@@ -120,10 +120,6 @@ impl Terminal {
         }
     }
 
-    pub fn size(&self) -> (u16, u16) {
-        terminal::size().unwrap_or((80, 24))
-    }
-
     pub fn move_to(&mut self, x: u16, y: u16) -> &mut Self {
         queue!(self.writer, cursor::MoveTo(x, y)).unwrap();
         self

@@ -12,3 +12,4 @@ categories = ["command-line-interface"]
 
 [dependencies]
 crossterm = "0.29.0"
+tokio = "1.49.0"
