@@ -5,11 +5,14 @@
 //! terminal state cleanup automatically.
 //!
 //! ## Example
-//! ```rust
+//! ```rust,no_run
 //! use blessingrs::Terminal;
 //! let term = Terminal::new();
 //! println!("{}", term.style("bold_red_on_black", "Hello!"));
 //! ```
+
+//! ```rust
+//! fn main() { println!("test") }
 
 use std::io::{self, Stdout, Write, BufWriter};
 use std::time::Duration;
