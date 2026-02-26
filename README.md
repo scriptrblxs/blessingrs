@@ -16,13 +16,6 @@ Built on top of the crossterm engine, Blessingrs manages raw mode, screen switch
 
 ## Quick Start
 
-Add this to your Cargo.toml:
-
-```toml
-[dependencies]
-blessingrs = "0.1.0"
-```
-
 ### Basic Usage
 
 ```rust

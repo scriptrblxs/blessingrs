@@ -12,35 +12,68 @@
 //! ```
 
 use std::io::{self, Stdout, Write, BufWriter};
+use std::time::Duration;
 use crossterm::{
     cursor, execute, queue,
+    event::{self, Event, KeyEvent, KeyEventKind},
     style::{self, Stylize, Color},
     terminal,
 };
 
+/// Struct for .size()
+pub struct Size {
+    x: u16,
+    y: u16,
+}
+
 /// The main entry point for managing the terminal state.
-/// When created, it enters raw mode and switches to the alternate screen.
-/// When dropped, it restores the terminal to its original state.
 pub struct Terminal {
     writer: BufWriter<Stdout>,
 }
 
 impl Terminal {
-    /// Initializes the terminal, enables raw mode, and hides the cursor.
+    /// Initializes the terminal, enables raw mode, and switches to the alternate screen.
     pub fn new() -> Self {
         let mut writer = BufWriter::new(io::stdout());
-        terminal::enable_raw_mode().unwrap();
-        execute!(writer, terminal::EnterAlternateScreen, cursor::Hide).unwrap();
+        terminal::enable_raw_mode().expect("Failed to enable raw mode");
+        execute!(writer, terminal::EnterAlternateScreen, cursor::Hide).expect("Failed to setup terminal");
         Self { writer }
     }
+    
+    /// Returns the size of the terminal (returns a struct with .x and .y u16s).
+    pub fn size(&self) -> Size {
+        let (x, y) = terminal::size().unwrap_or((80, 24));
+        return Size {x, y}
+    }
 
-    /// Formats text based on a style string.
+    /// Flushes the buffer and pauses execution for `ms` milliseconds.
+    /// Requires an active Tokio runtime.
+    pub async fn sleep(&mut self, ms: u64) {
+        self.flush();
+        tokio::time::sleep(Duration::from_millis(ms)).await;
+    }
+
+    /// Polls for input and executes a closure if a key event occurs.
     /// 
-    /// Supported format: `[bold_]foreground[_on_background]`
-    /// Examples: "red", "bold_blue", "green_on_black", "bold_white_on_blue"
-    /// 
-    /// # Panics
-    /// Panics if a color name is not recognized or if the format is invalid.
+    /// This is non-blocking with a tiny timeout (1ms), making it 
+    /// perfect for high-frequency game loops or animations.
+    pub fn add_input_handler<F>(&mut self, mut handler: F) -> io::Result<()>
+    where
+        F: FnMut(KeyEvent),
+    {
+        // Poll briefly to see if an event is available
+        if event::poll(Duration::from_millis(1))? {
+            if let Event::Key(key) = event::read()? {
+                // Filter for Press to avoid double-triggers on Windows
+                if key.kind == KeyEventKind::Press {
+                    handler(key);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Formats text based on a style string: `[bold_]foreground[_on_background]`
     pub fn style(&self, style_spec: &str, text: &str) -> String {
         let mut is_bold = false;
         let mut spec = style_spec;
@@ -87,36 +120,29 @@ impl Terminal {
         }
     }
 
-    /// Returns the current terminal size as (width, height).
     pub fn size(&self) -> (u16, u16) {
         terminal::size().unwrap_or((80, 24))
     }
 
-    /// Moves the cursor to the specified coordinates.
     pub fn move_to(&mut self, x: u16, y: u16) -> &mut Self {
         queue!(self.writer, cursor::MoveTo(x, y)).unwrap();
         self
     }
 
-    /// Clears the entire terminal screen.
     pub fn clear(&mut self) -> &mut Self {
         queue!(self.writer, terminal::Clear(terminal::ClearType::All)).unwrap();
         self
     }
 
-    /// Appends text to the internal buffer. Use `flush()` to render to screen.
     pub fn print(&mut self, text: &str) -> &mut Self {
         write!(self.writer, "{}", text).unwrap();
         self
     }
 
-    /// Flushes the buffer, sending all queued commands to the terminal.
     pub fn flush(&mut self) {
         let _ = self.writer.flush();
     }
 
-    /// Moves the cursor to a location and returns a guard.
-    /// When the guard is dropped, the cursor returns to its previous position.
     pub fn location(&mut self, x: u16, y: u16) -> LocationGuard<'_> {
         let (saved_x, saved_y) = cursor::position().unwrap_or((0, 0));
         queue!(self.writer, cursor::MoveTo(x, y)).unwrap();
@@ -136,7 +162,7 @@ impl Drop for Terminal {
     }
 }
 
-/// A guard that restores the cursor position when it goes out of scope.
+/// A guard that restores cursor position when it goes out of scope.
 pub struct LocationGuard<'a> {
     term: &'a mut Terminal,
     saved_x: u16,
