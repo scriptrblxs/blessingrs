@@ -1,6 +1,6 @@
 # Blessingrs
 
-![Build Status](https://github.com/YOUR_USERNAME/blessingrs/actions/workflows/ci.yml/badge.svg)
+![Build Status](https://github.com/scriptrblxs/blessingrs/actions/workflows/ci.yml/badge.svg)
 
 Blessingrs is a lightweight terminal styling and manipulation library for Rust. Inspired by the Python blessings package, it provides a dynamic approach to terminal formatting using string specifications.
 
